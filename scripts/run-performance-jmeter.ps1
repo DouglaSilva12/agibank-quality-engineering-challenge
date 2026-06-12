@@ -15,6 +15,8 @@ $templatePath = Join-Path $repoRoot "src/test/jmeter/blazedemo-purchase-template
 $profilesDir = Join-Path $repoRoot "src/test/jmeter/profiles"
 $targetRoot = Join-Path $repoRoot "target/jmeter"
 $toolsRoot = Join-Path $repoRoot "tools"
+$isWindowsOs = [System.Environment]::OSVersion.Platform -eq "Win32NT"
+$jmeterExecutableName = if ($isWindowsOs) { "jmeter.bat" } else { "jmeter" }
 
 function Ensure-ChildPath {
     param([string]$Path)
@@ -60,7 +62,7 @@ function Read-Profile {
 
 function Get-JMeterExecutable {
     if ($JMeterHome) {
-        $candidate = Join-Path $JMeterHome "bin/jmeter.bat"
+        $candidate = Join-Path $JMeterHome "bin/$jmeterExecutableName"
         if (Test-Path $candidate) {
             return (Resolve-Path $candidate).Path
         }
@@ -69,7 +71,7 @@ function Get-JMeterExecutable {
     }
 
     if ($env:JMETER_HOME) {
-        $candidate = Join-Path $env:JMETER_HOME "bin/jmeter.bat"
+        $candidate = Join-Path $env:JMETER_HOME "bin/$jmeterExecutableName"
         if (Test-Path $candidate) {
             return (Resolve-Path $candidate).Path
         }
@@ -81,7 +83,7 @@ function Get-JMeterExecutable {
     }
 
     $localHome = Join-Path $toolsRoot "apache-jmeter-$jmeterVersion"
-    $localJMeter = Join-Path $localHome "bin/jmeter.bat"
+    $localJMeter = Join-Path $localHome "bin/$jmeterExecutableName"
     if (Test-Path $localJMeter) {
         return (Resolve-Path $localJMeter).Path
     }
@@ -104,6 +106,10 @@ function Get-JMeterExecutable {
 
     if (-not (Test-Path $localJMeter)) {
         throw "Falha ao preparar JMeter em $localJMeter"
+    }
+
+    if (-not $isWindowsOs) {
+        chmod +x $localJMeter
     }
 
     return (Resolve-Path $localJMeter).Path

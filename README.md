@@ -78,10 +78,12 @@ O workflow executa:
 
 1. Checkout do projeto.
 2. Configuracao do Java 17.
-3. Execucao dos testes com Maven, incluindo API, WEB e PERFORMANCE.
-4. Geracao do Allure Report em `target/site/allure-report`.
-5. Upload dos artefatos do Allure por 7 dias no GitHub Actions.
-6. Publicacao do HTML do Allure no GitHub Pages.
+3. Limpeza do `target` com `mvn clean`.
+4. Execucao do JMeter `smoke` para gerar artefatos em `target/jmeter`.
+5. Execucao dos testes com Maven, incluindo API, WEB e PERFORMANCE.
+6. Geracao do Allure Report em `target/site/allure-report`.
+7. Upload dos artefatos do Allure e JMeter por 7 dias no GitHub Actions.
+8. Publicacao do HTML do Allure no GitHub Pages.
 
 Agenda automatica:
 
@@ -90,6 +92,8 @@ Agenda automatica:
 ```
 
 Essa agenda roda em UTC, conforme padrao do GitHub Actions.
+
+O teste de performance anexado ao Allure usa o relatorio JMeter `smoke` gerado pela pipeline. Os planos de carga e pico de `250 req/s` permanecem documentados em `jmeter/`, mas nao sao executados automaticamente contra o site publico.
 
 Para habilitar a publicacao no GitHub:
 

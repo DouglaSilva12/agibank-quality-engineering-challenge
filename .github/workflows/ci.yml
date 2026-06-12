@@ -42,8 +42,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-allure-history-
 
+      - name: Clean Maven target
+        run: mvn clean
+
+      - name: Generate JMeter smoke report
+        shell: pwsh
+        run: ./scripts/run-performance-jmeter.ps1 -Scenario smoke
+
       - name: Run tests
-        run: mvn clean test
+        run: mvn test
 
       - name: Add Allure history to results
         if: always()
@@ -96,6 +103,14 @@ jobs:
         with:
           name: allure-report
           path: target/site/allure-report
+          retention-days: 7
+
+      - name: Upload JMeter reports
+        if: always() && hashFiles('target/jmeter/reports/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-reports
+          path: target/jmeter
           retention-days: 7
 
       - name: Prepare Allure report for GitHub Pages
