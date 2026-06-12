@@ -127,158 +127,99 @@ mvn test -Dtest=BreedImagesTest "-Ddog.invalidBreed=raca-nao-cadastrada"
 
 As imagens retornadas pela API sao anexadas ao Allure como evidencias.
 
-## Teste WEB
+## Testes WEB
 
-O teste WEB valida que a busca de artigos do Blog do Agi carrega com sucesso:
+Os testes WEB validam a busca de artigos no Blog do Agi, conforme o enunciado do desafio:
 
 ```text
-https://blog.agibank.com.br/?s=emprestimo
+https://blogdoagi.com.br/
 ```
+
+Tecnologias usadas:
+
+- Cucumber com escrita dos cenarios em Gherkin.
+- Selenium WebDriver em modo headless.
+- JUnit Platform para execucao pelo Maven.
+- Allure Cucumber para gerar relatorio e evidencias.
+
+Arquivo principal dos cenarios:
+
+```text
+src/test/resources/features/web/blog_search.feature
+```
+
+Cenarios automatizados:
+
+- `Pesquisar artigo com termo valido`: pesquisa pelo termo `INSS` e valida que a pagina apresenta resultado relacionado ao termo informado.
+- `Pesquisar artigo com termo inexistente`: pesquisa por `xptoautomacao123` e valida que a pagina de resultado abre sem erro da aplicacao.
+- `Pesquisar sem informar termo`: valida que a aplicacao permanece estavel quando a busca e feita sem preenchimento.
+
+Evidencias geradas no Allure:
+
+- Cada passo dos cenarios WEB recebe evidencia automaticamente.
+- O hook WEB anexa a URL atual e o titulo da pagina.
+- O hook WEB anexa screenshot do navegador apos cada passo.
+- No Allure, os cenarios aparecem agrupados em `WEB` na aba `Behaviors`.
+
+Execucao somente dos testes WEB:
+
+```bash
+mvn test -Dtest=RunWebCucumberTest
+```
+
+Observacao tecnica: a automacao valida o comportamento da busca usando a rota de pesquisa do WordPress, equivalente ao resultado produzido pela lupa do blog. Essa abordagem reduz instabilidade em execucoes headless e na pipeline.
 
 ## Performance com JMeter
 
-### Escopo
+O diretorio `jmeter/` contem os planos e relatorios JMeter usados na avaliacao de compra de passagem no BlazeDemo.
 
-- URL: `https://www.blazedemo.com`
-- Ferramenta: Apache JMeter
-- Cenario: compra de passagem aerea - passagem comprada com sucesso
-- Criterio de aceitacao:
-  - `250` requisicoes por segundo
-  - 90th percentil inferior a `2` segundos, ou seja, menor que `2000 ms`
+Artefatos principais:
 
-### Scripts JMeter Para Importacao Manual
+- `jmeter/performance/carga/blazedemo-compra-passagem-carga.jmx`
+- `jmeter/performance/carga/results-carga.jtl`
+- `jmeter/performance/carga/html-report-carga/index.html`
+- `jmeter/performance/pico/blazedemo-compra-passagem-pico.jmx`
+- `jmeter/performance/pico/results-pico.jtl`
+- `jmeter/performance/pico/html-report-pico/index.html`
 
-Os planos prontos para abrir manualmente no JMeter estao na pasta:
+Fluxo executado:
 
-```text
-jmeter/
-|-- blazedemo-compra-passagem-carga.jmx
-|-- blazedemo-compra-passagem-pico.jmx
-|-- README.md
-`-- reports
-    `-- relatorio-execucao.md
-```
+1. Acessa a home do BlazeDemo.
+2. Busca voos de `Boston` para `London`.
+3. Seleciona o voo `43`, companhia `Virgin America`, preco `472.56`.
+4. Confirma a compra.
+5. Valida a mensagem `Thank you for your purchase today!`.
 
-Esses arquivos ficam isolados na raiz do projeto e nao interferem na execucao dos testes automatizados Maven, API, WEB ou Allure.
+Criterio de aceitacao:
 
-### Fluxo Automatizado
+- Throughput minimo: `250 req/s`.
+- Percentil 90 menor que `2000 ms`.
+- Zero erros funcionais ou HTTP relevantes.
 
-Cada iteracao executa a compra completa:
+Resultados observados nos relatorios JMeter:
 
-1. `GET /` - acessa a home do BlazeDemo.
-2. `POST /reserve.php` - busca voos de `Boston` para `London`.
-3. `POST /purchase.php` - seleciona o voo `43`, companhia `Virgin America`, preco `472.56`.
-4. `POST /confirmation.php` - envia os dados da compra.
-5. Valida a mensagem: `Thank you for your purchase today!`.
+| Cenario | Samples | Erros | Throughput total | p90 total | Compras/s | p90 compra | Status |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Carga | 73589 | 0 | 244.70 req/s | 527 ms | 61.49 | 1825 ms | Nao satisfeito |
+| Pico | 29255 | 0 | 231.52 req/s | 2128 ms | 58.88 | 6026 ms | Nao satisfeito |
 
-Como cada compra completa possui 4 requisicoes HTTP, a vazao de `250 req/s` representa aproximadamente `62,5 compras completas por segundo`.
+Conclusao: os dois cenarios executaram sem erros, mas nao atenderam integralmente ao criterio de aceite. No teste de carga, o p90 ficou dentro do limite, porem o throughput total ficou abaixo de `250 req/s`. No teste de pico, o throughput tambem ficou abaixo de `250 req/s` e o p90 ultrapassou `2000 ms`.
 
-### Teste de Carga
-
-Arquivo:
-
-```text
-jmeter/blazedemo-compra-passagem-carga.jmx
-```
-
-Configuracao:
-
-- Threads: `350`
-- Ramp-up: `60` segundos
-- Duracao: `300` segundos
-- Throughput alvo: `250 req/s`
-- Throughput configurado no JMeter: `15000` requisicoes por minuto
-- Criterio p90: menor que `2000 ms`
-
-Objetivo: manter a vazao alvo de forma sustentada para avaliar estabilidade.
-
-### Teste de Pico
-
-Arquivo:
-
-```text
-jmeter/blazedemo-compra-passagem-pico.jmx
-```
-
-Configuracao:
-
-- Threads: `500`
-- Ramp-up: `5` segundos
-- Duracao: `120` segundos
-- Throughput alvo: `250 req/s`
-- Throughput configurado no JMeter: `15000` requisicoes por minuto
-- Criterio p90: menor que `2000 ms`
-
-Objetivo: aplicar subida brusca de carga e verificar se a aplicacao sustenta o mesmo criterio durante o pico.
-
-### Como Importar Manualmente no JMeter
-
-1. Abra o Apache JMeter.
-2. Clique em `File > Open`.
-3. Selecione um dos arquivos:
-   - `jmeter/blazedemo-compra-passagem-carga.jmx`
-   - `jmeter/blazedemo-compra-passagem-pico.jmx`
-4. Confira o `Thread Group` e o `Constant Throughput Timer`.
-5. Para acompanhar localmente pela interface, adicione listeners como `Summary Report`, `Aggregate Report` ou `View Results Tree`.
-6. Para execucao oficial, prefira modo non-GUI.
-
-### Como Executar em Modo Non-GUI
-
-Teste de carga:
+Execucao non-GUI equivalente:
 
 ```powershell
-jmeter -n -t jmeter/blazedemo-compra-passagem-carga.jmx -l jmeter/reports/carga/results.jtl -e -o jmeter/reports/carga/html
+jmeter -n -t jmeter/performance/carga/blazedemo-compra-passagem-carga.jmx -l jmeter/performance/carga/results-carga.jtl -e -o jmeter/performance/carga/html-report-carga
+jmeter -n -t jmeter/performance/pico/blazedemo-compra-passagem-pico.jmx -l jmeter/performance/pico/results-pico.jtl -e -o jmeter/performance/pico/html-report-pico
 ```
 
-Teste de pico:
+Mais detalhes da analise estao em `jmeter/README.md`.
 
-```powershell
-jmeter -n -t jmeter/blazedemo-compra-passagem-pico.jmx -l jmeter/reports/pico/results.jtl -e -o jmeter/reports/pico/html
-```
+No Allure, o teste `BlazeDemoPerformanceTest` anexa os dashboards HTML e os arquivos `statistics.json` dos cenarios de carga e pico:
 
-No Linux/macOS, os comandos sao os mesmos se o binario `jmeter` estiver no `PATH`.
-
-### Relatorio de Execucao dos Testes
-
-O relatorio de analise esta em:
-
-```text
-jmeter/reports/relatorio-execucao.md
-```
-
-Apos executar os testes, anexe tambem os artefatos gerados pelo JMeter:
-
-- Carga:
-  - `jmeter/reports/carga/results.jtl`
-  - `jmeter/reports/carga/html/index.html`
-- Pico:
-  - `jmeter/reports/pico/results.jtl`
-  - `jmeter/reports/pico/html/index.html`
-
-### Conclusao Sobre o Criterio de Aceitacao
-
-O criterio de aceitacao ainda nao pode ser declarado como satisfeito, porque os testes de carga e pico de `250 req/s` nao foram executados contra o site publico `https://www.blazedemo.com`.
-
-A execucao foi bloqueada por criterio tecnico e de responsabilidade: autorizacao para executar comandos nesta maquina nao equivale a autorizacao formal do responsavel pelo dominio publico para receber carga de `250 req/s` durante varios minutos. Essa carga poderia impactar um ambiente de terceiro.
-
-Os scripts foram montados para atingir a vazao alvo usando `Constant Throughput Timer` configurado com `15000` requisicoes por minuto, equivalente a `250` requisicoes por segundo.
-
-Para considerar o criterio como satisfeito, os dois relatorios, carga e pico, precisam demonstrar simultaneamente:
-
-- Throughput observado maior ou igual a `250 req/s`.
-- 90th percentil menor que `2000 ms`.
-- Compra finalizada com sucesso.
-- Ausencia de erros HTTP e falhas de assertion relevantes.
-
-Se qualquer uma dessas condicoes nao for atendida, o criterio deve ser considerado nao satisfeito.
-
-### Consideracoes Pertinentes
-
-`https://www.blazedemo.com` e um site publico de demonstracao. A execucao de `250 req/s` deve ser feita somente quando houver autorizacao formal do responsavel pelo alvo ou quando o teste for direcionado para uma instancia propria/homologada.
-
-O uso de modo non-GUI e recomendado para a execucao oficial, porque a interface grafica do JMeter consome recursos e pode distorcer os resultados.
-
-O arquivo `jmeter/reports/relatorio-execucao.md` deve ser atualizado com os valores reais observados apos a execucao: throughput, p90, quantidade de erros e conclusao final.
+- `jmeter/performance/carga/html-report-carga/index.html`
+- `jmeter/performance/carga/html-report-carga/statistics.json`
+- `jmeter/performance/pico/html-report-pico/index.html`
+- `jmeter/performance/pico/html-report-pico/statistics.json`
 
 ## Estrutura
 

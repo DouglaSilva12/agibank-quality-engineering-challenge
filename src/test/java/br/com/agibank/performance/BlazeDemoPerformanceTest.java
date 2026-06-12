@@ -31,6 +31,10 @@ public class BlazeDemoPerformanceTest {
     private static final Path LOAD_PROFILE = Path.of("src/test/jmeter/profiles/load.properties");
     private static final Path SPIKE_PROFILE = Path.of("src/test/jmeter/profiles/spike.properties");
     private static final Path JMETER_REPORTS = Path.of("target/jmeter/reports");
+    private static final Path LOAD_HTML_REPORT = Path.of("jmeter/performance/carga/html-report-carga/index.html");
+    private static final Path LOAD_STATISTICS = Path.of("jmeter/performance/carga/html-report-carga/statistics.json");
+    private static final Path SPIKE_HTML_REPORT = Path.of("jmeter/performance/pico/html-report-pico/index.html");
+    private static final Path SPIKE_STATISTICS = Path.of("jmeter/performance/pico/html-report-pico/statistics.json");
 
     @BeforeEach
     public void configurarSuiteAllure() {
@@ -49,6 +53,7 @@ public class BlazeDemoPerformanceTest {
         Allure.addAttachment("Perfil de carga", "text/plain", Files.readString(LOAD_PROFILE));
         Allure.addAttachment("Perfil de pico", "text/plain", Files.readString(SPIKE_PROFILE));
         attachGeneratedReports();
+        attachManualPerformanceReports();
 
         assertAll(
                 () -> assertTrue(Files.exists(JMETER_TEMPLATE), "Template JMeter deve existir."),
@@ -99,6 +104,25 @@ public class BlazeDemoPerformanceTest {
                 assertFalse(Files.readString(summary).contains("Status: NAO SATISFEITO"),
                         "Criterio de aceite nao satisfeito em " + summary);
             }
+        }
+    }
+
+    private static void attachManualPerformanceReports() throws IOException {
+        attachReportFile("Dashboard JMeter - carga", "text/html", LOAD_HTML_REPORT, ".html");
+        attachReportFile("Metricas JMeter - carga", "application/json", LOAD_STATISTICS, ".json");
+        attachReportFile("Dashboard JMeter - pico", "text/html", SPIKE_HTML_REPORT, ".html");
+        attachReportFile("Metricas JMeter - pico", "application/json", SPIKE_STATISTICS, ".json");
+    }
+
+    private static void attachReportFile(String name, String contentType, Path path, String extension) throws IOException {
+        if (!Files.exists(path)) {
+            Allure.addAttachment(name + " - nao encontrado", "text/plain",
+                    "Arquivo nao encontrado: " + path);
+            return;
+        }
+
+        try (var input = Files.newInputStream(path)) {
+            Allure.addAttachment(name, contentType, input, extension);
         }
     }
 }
