@@ -5,8 +5,11 @@ out/
 
 # Maven
 target/
+tools/
 
 # Allure Reports
+.allure/
+.allure-history/
 allure-results/
 allure-report/
 

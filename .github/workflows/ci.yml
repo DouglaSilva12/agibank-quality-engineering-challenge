@@ -1,0 +1,86 @@
+name: Quality Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Restore Allure history
+        uses: actions/cache/restore@v4
+        with:
+          path: .allure-history
+          key: ${{ runner.os }}-allure-history-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-allure-history-
+
+      - name: Run tests
+        run: mvn clean test
+
+      - name: Add Allure history to results
+        if: always()
+        run: |
+          if [ -d .allure-history ]; then
+            mkdir -p target/allure-results/history
+            cp -R .allure-history/. target/allure-results/history/
+          fi
+
+      - name: Generate Allure report
+        if: always()
+        run: |
+          if ls target/allure-results/*-result.json >/dev/null 2>&1; then
+            mvn allure:report
+          else
+            echo "No Allure result files were generated; skipping Allure report."
+          fi
+
+      - name: Save Allure history
+        if: always() && hashFiles('target/site/allure-report/history/history-trend.json') != ''
+        run: |
+          rm -rf .allure-history
+          mkdir -p .allure-history
+          cp -R target/site/allure-report/history/. .allure-history/
+
+      - name: Cache Allure history
+        if: always() && hashFiles('.allure-history/history-trend.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .allure-history
+          key: ${{ runner.os }}-allure-history-${{ github.run_id }}
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: target/allure-results
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: target/site/allure-report
