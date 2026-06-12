@@ -60,7 +60,7 @@ Resultados gerados:
 
 ## Relatorio Allure Publico
 
-A pipeline publica o relatorio Allure no GitHub Pages apos cada push na branch `main` ou `master`.
+A pipeline publica o relatorio Allure no GitHub Pages apos cada push na branch `main` ou `master`, por execucao manual e por agenda automatica a cada 4 horas.
 
 URL publica esperada:
 
@@ -78,10 +78,18 @@ O workflow executa:
 
 1. Checkout do projeto.
 2. Configuracao do Java 17.
-3. Execucao dos testes com Maven.
+3. Execucao dos testes com Maven, incluindo API, WEB e PERFORMANCE.
 4. Geracao do Allure Report em `target/site/allure-report`.
 5. Upload dos artefatos do Allure por 7 dias no GitHub Actions.
 6. Publicacao do HTML do Allure no GitHub Pages.
+
+Agenda automatica:
+
+```text
+0 */4 * * *
+```
+
+Essa agenda roda em UTC, conforme padrao do GitHub Actions.
 
 Para habilitar a publicacao no GitHub:
 

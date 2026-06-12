@@ -6,6 +6,9 @@ on:
       - main
       - master
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */4 * * *"
 
 permissions:
   contents: read
@@ -96,18 +99,18 @@ jobs:
           retention-days: 7
 
       - name: Prepare Allure report for GitHub Pages
-        if: always() && github.event_name == 'push' && hashFiles('target/site/allure-report/index.html') != ''
+        if: always() && github.event_name != 'pull_request' && hashFiles('target/site/allure-report/index.html') != ''
         run: |
           touch target/site/allure-report/.nojekyll
 
       - name: Upload GitHub Pages artifact
-        if: always() && github.event_name == 'push' && hashFiles('target/site/allure-report/index.html') != ''
+        if: always() && github.event_name != 'pull_request' && hashFiles('target/site/allure-report/index.html') != ''
         uses: actions/upload-pages-artifact@v3
         with:
           path: target/site/allure-report
 
   deploy-allure-report:
-    if: always() && github.event_name == 'push'
+    if: always() && github.event_name != 'pull_request'
     needs: test
     runs-on: ubuntu-latest
 
