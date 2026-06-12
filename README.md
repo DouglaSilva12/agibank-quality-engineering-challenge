@@ -58,6 +58,41 @@ Resultados gerados:
 - `target/allure-results`
 - `target/site/allure-report`
 
+## Relatorio Allure Publico
+
+A pipeline publica o relatorio Allure no GitHub Pages apos cada push na branch `main` ou `master`.
+
+URL publica esperada:
+
+```text
+https://douglasilva12.github.io/agibank-quality-engineering-challenge/
+```
+
+Workflow responsavel:
+
+```text
+.github/workflows/ci.yml
+```
+
+O workflow executa:
+
+1. Checkout do projeto.
+2. Configuracao do Java 17.
+3. Execucao dos testes com Maven.
+4. Geracao do Allure Report em `target/site/allure-report`.
+5. Upload dos artefatos do Allure por 7 dias no GitHub Actions.
+6. Publicacao do HTML do Allure no GitHub Pages.
+
+Para habilitar a publicacao no GitHub:
+
+1. Acesse o repositorio no GitHub.
+2. Va em `Settings > Pages`.
+3. Em `Build and deployment`, selecione `GitHub Actions` como source.
+4. Faca push para `main` ou `master`.
+5. Abra a URL publica gerada pelo job `deploy-allure-report`.
+
+O GitHub Pages permanece publico enquanto o repositorio e a configuracao de Pages estiverem ativos. Os artifacts do workflow ficam retidos por 7 dias.
+
 ## Testes de API
 
 Endpoints cobertos:
